@@ -4,33 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Duyuru Kaydı - OneSignal</title>
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js" defer></script>
+    <!-- OneSignal v16 SDK -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignal = window.OneSignal || [];
       
       const urlParams = new URLSearchParams(window.location.search);
       const userId = urlParams.get('uid');
-      const appId = urlParams.get('appid'); // AppScript'ten gelen uygulama ID'si
+      const appId = urlParams.get('appid');
 
-      OneSignal.push(function() {
-        OneSignal.init({
-          appId: appId, // Dinamik App ID
+      OneSignal.push(async function() {
+        await OneSignal.init({
+          appId: appId,
           allowLocalhostAsSecureOrigin: true,
         });
 
-        // Eğer kullanıcı adı gelmişse cihazla eşleştir
         if (userId) {
-            OneSignal.login(userId); // OneSignal'da kullanıcıyı eşleştirmenin en modern yolu
+            await OneSignal.login(userId);
             console.log("Kullanıcı eşleşti: " + userId);
+        }
+
+        // Bildirim kutusunu elle (zorla) açtıralım
+        if (!OneSignal.Notifications.permission) {
+            await OneSignal.Notifications.requestPermission();
         }
       });
 
-      // Kayıt başarılı olduğunda kullanıcıya bilgi ver
-      OneSignal.on('subscriptionChange', function (isSubscribed) {
-        if (isSubscribed) {
-            document.getElementById('status-text').innerHTML = "<b style='color:green;'>İşlem Başarılı!</b><br>Kaydınız yapıldı. Bu pencereyi kapatabilirsiniz.";
-            setTimeout(() => { window.close(); }, 4000);
+      // Kayıt durumu değişirse algıla
+      OneSignal.Notifications.addEventListener("permissionChange", (permission) => {
+        if (permission) {
+            document.getElementById('status-text').innerHTML = "<b style='color:green;'>İşlem Başarılı!</b><br>Kaydınız yapıldı. Pencere kapatılıyor...";
+            setTimeout(() => { window.close(); }, 3000);
         }
       });
     </script>
@@ -38,8 +42,9 @@
 <body style="text-align:center; font-family:sans-serif; padding-top:50px; background-color:#f4f4f4;">
     <div style="background:white; padding:30px; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.1); display:inline-block; max-width:90%; width: 400px;">
         <h2 style="color:#eb4d4b;">🔔 Duyuru Kaydı</h2>
-        <p id="status-text">Lütfen çıkan bildirim kutusunda <b>"İzin Ver"</b> butonuna basın.</p>
-        <p style="font-size:12px; color:#888;">(Pencere açılmazsa lütfen sayfayı yenileyin.)</p>
+        <p id="status-text">Lütfen tarayıcının üst kısmında çıkan kutucukta <b>"İzin Ver"</b> butonuna basın.</p>
+        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+        <p style="font-size:11px; color:#999;">Pencere otomatik açılmazsa lütfen sayfayı yenileyin.</p>
     </div>
 </body>
 </html>
