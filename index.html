@@ -12,52 +12,45 @@
       const urlParams = new URLSearchParams(window.location.search);
       const uid = urlParams.get('uid');
       const appId = urlParams.get('appid');
-      const role = urlParams.get('role');
-
-      // Buton için fonksiyonu dışarıda tanımlayalım (Hata vermemesi için korumalı)
-      async function triggerPrompt() {
-          if (window.OneSignal && OneSignal.Notifications) {
-              await OneSignal.Notifications.requestPermission();
-          } else {
-              location.reload(); // SDK henüz yüklenmediyse sayfayı tazele
-          }
-      }
 
       OneSignal.push(async function() {
-        // OneSignal'ı başlat
-        await OneSignal.init({
-          appId: appId,
-          allowLocalhostAsSecureOrigin: true,
-        });
+        try {
+            await OneSignal.init({
+                appId: appId,
+                serviceWorkerPath: 'OneSignalSDKWorker.js', // Dosyayı doğrudan işaret et
+                allowLocalhostAsSecureOrigin: true
+            });
 
-        // Kullanıcı eşleştirme
-        if (uid) {
-            await OneSignal.login(uid);
-            if (role) {
-                await OneSignal.User.addTag("user_role", role);
+            if (uid) {
+                await OneSignal.login(uid);
+                console.log("Giriş yapıldı: " + uid);
             }
-        }
 
-        // --- İZİN KUTUSUNU TETİKLE ---
-        // SDK ve Notifications hazır olduğunda kutuyu açar
-        if (OneSignal.Notifications) {
-            await OneSignal.Notifications.requestPermission();
+            // Kütüphanenin kendine gelmesi için yarım saniye bekleyip kutuyu açalım
+            setTimeout(() => {
+                if (OneSignal.Notifications) {
+                    OneSignal.Notifications.requestPermission();
+                } else {
+                    console.error("Notifications nesnesi yüklenemedi.");
+                }
+            }, 500);
+
+        } catch (e) {
+            console.error("Başlatma hatası:", e);
         }
       });
     </script>
 </head>
 <body style="text-align:center; font-family:sans-serif; padding:50px; background-color:#f4f4f4;">
     <div style="background:white; padding:30px; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.1); display:inline-block; width:90%; max-width:400px;">
-        <h2>🔔 Duyuru Kaydı</h2>
-        <p id="status-text">Lütfen tarayıcının üst kısmında çıkan kutucukta <b>"İzin Ver"</b> butonuna basın.</p>
+        <h2 style="color:#eb4d4b;">🔔 Duyuru Kaydı</h2>
+        <p id="status-text">Lütfen yukarıda açılan kutucukta <b>"İzin Ver"</b> butonuna basarak işlemi tamamlayın.</p>
         <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
-        
-        <!-- Güvenli Buton -->
-        <button onclick="triggerPrompt()" style="padding:15px; background:#007bff; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; width:100%;">
-            KUTUCUK GELMEZSE BURAYA TIKLAYIN
+        <p style="font-size:12px; color:#999;">Kutu gelmezse sayfayı yenileyiniz.</p>
+        <!-- Manuel Tetikleme Butonu -->
+        <button onclick="OneSignal.Notifications.requestPermission()" style="margin-top:10px; padding:10px; cursor:pointer; background:#eee; border:1px solid #ccc; border-radius:5px;">
+            Kutuyu Tekrar Aç
         </button>
-        
-        <p style="font-size:11px; color:#999; margin-top:15px;">Kayıt yapıldıktan sonra bu pencereyi kapatabilirsiniz.</p>
     </div>
 </body>
 </html>
