@@ -31,8 +31,11 @@
                 console.log("Rol etiketlendi: " + role);
             }
           }
-    
-          await OneSignal.Notifications.requestPermission();
+          setTimeout(async () => {
+            console.log("Bildirim izni isteniyor...");
+            await OneSignal.Notifications.requestPermission();
+          }, 1000);    
+          
       });
         
 
