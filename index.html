@@ -3,50 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Duyuru Kaydı - OneSignal</title>
+    <title>Duyuru Kaydı - Debug Mode</title>
     <!-- OneSignal v16 SDK -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignal = window.OneSignal || [];
       
-      // URL parametrelerini oku
       const urlParams = new URLSearchParams(window.location.search);
-      const uidParam = urlParams.get('uid');   // Apps Script'ten gelen uid
-      const appIdParam = urlParams.get('appid'); // Apps Script'ten gelen appid
+      const uid = urlParams.get('uid');
+      const appId = urlParams.get('appid');
 
-      OneSignal.push(async function() {
-        // OneSignal'ı başlat
-        await OneSignal.init({
-          appId: appIdParam,
-          allowLocalhostAsSecureOrigin: true,
-        });
+      async function startOneSignal() {
+        try {
+            await OneSignal.init({
+                appId: appId,
+                allowLocalhostAsSecureOrigin: true,
+            });
 
-        // Kullanıcı adını OneSignal'a login et (UID eşleme)
-        if (uidParam) {
-            await OneSignal.login(uidParam);
-            console.log("Kullanıcı eşleşti: " + uidParam);
+            if (uid) {
+                await OneSignal.login(uid);
+                document.getElementById('debug-log').innerHTML += "• Kullanıcı girişi yapıldı: " + uid + "<br>";
+            }
+
+            // DURUM KONTROLÜ
+            const isPushSupported = OneSignal.Notifications.isPushSupported();
+            document.getElementById('debug-log').innerHTML += "• Bildirim desteği: " + (isPushSupported ? "VAR" : "YOK") + "<br>";
+
+            // İzin isteme komutu
+            showPermissionPrompt();
+
+        } catch (err) {
+            document.getElementById('debug-log').innerHTML += "<b style='color:red;'>• HATA: " + err + "</b><br>";
         }
+      }
 
-        // İzin iste (Kutucuğu zorla açtır)
-        console.log("İzin isteniyor...");
-        await OneSignal.Notifications.requestPermission();
-      });
+      async function showPermissionPrompt() {
+          document.getElementById('debug-log').innerHTML += "• İzin kutusu tetikleniyor...<br>";
+          await OneSignal.Notifications.requestPermission();
+      }
 
-      // İzin verildiğinde sayfayı kapat
+      OneSignal.push(startOneSignal);
+
       OneSignal.Notifications.addEventListener("permissionChange", (permission) => {
         if (permission) {
-            document.getElementById('status-text').innerHTML = "<b style='color:green;'>İŞLEM BAŞARILI!</b><br>Kayıt yapıldı. Pencere kapatılıyor...";
+            document.getElementById('status-text').innerHTML = "<b style='color:green;'>İŞLEM BAŞARILI!</b><br>Kayıt yapıldı.";
             setTimeout(() => { window.close(); }, 3000);
         }
       });
     </script>
 </head>
-<body style="text-align:center; font-family:sans-serif; padding-top:50px; background-color:#f4f4f4;">
-    <div style="background:white; padding:30px; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.1); display:inline-block; width:90%; max-width:400px;">
-        <h2 style="color:#eb4d4b;">🔔 Duyuru Kaydı</h2>
-        <p id="status-text">Lütfen tarayıcının üst kısmında çıkan kutucukta <b>"İzin Ver"</b> butonuna basın.</p>
+<body style="text-align:center; font-family:sans-serif; padding:20px; background-color:#f4f4f4; color: #333;">
+    <div style="background:white; padding:30px; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.1); display:inline-block; width:100%; max-width:450px; box-sizing:border-box;">
+        <h2 style="color:#eb4d4b; margin-top:0;">🔔 Duyuru Kaydı</h2>
+        <p id="status-text">Lütfen yukarıda çıkan kutucukta <b>"İzin Ver"</b> deyin.</p>
+        
+        <!-- MANUEL BUTON: Tarayıcı engellerse buna basılacak -->
+        <button onclick="showPermissionPrompt()" style="background:#007bff; color:white; border:none; padding:12px 20px; border-radius:8px; font-weight:bold; cursor:pointer; width:100%; margin:10px 0;">
+            KUTUCUK ÇIKMAZSA BURAYA TIKLAYIN
+        </button>
+
         <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
-        <p style="font-size:11px; color:#999;">Kutu otomatik açılmazsa sayfayı yenileyiniz.</p>
+        
+        <!-- HATA AYIKLAMA PANELİ -->
+        <div id="debug-log" style="text-align:left; font-size:12px; background:#eee; padding:10px; border-radius:5px; font-family:monospace; color:#444;">
+            <b>Sistem Kayıtları:</b><br>
+        </div>
     </div>
 </body>
 </html>
